@@ -103,9 +103,15 @@
     <Compile Include="WebPageGenerator.cs" />
     <Compile Include="Watchdog.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="SerialDaemon.cs" />
+    <Compile Include="Configuration.cs" />
+    <Compile Include="Temperature.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="configuration.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

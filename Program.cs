@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
@@ -7,6 +8,7 @@ using System.Web.Http;
 using System.Net.Http.Formatting;
 
 using Microsoft.Owin.Hosting;
+using Newtonsoft.Json;
 using Owin;
 
 
@@ -25,8 +27,14 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
         { 
             Logger.Log("HippoArduinoSerialDaemon started");
 
+            // Read JSON configuration
+            var config = ReadConfig();
+           
             // Set up REST services in OWIN web server
-            var webapp = WebApp.Start("http://*:9002/", new Action<IAppBuilder>(Configuration));
+            var webapp = WebApp.Start("http://*:9003/", new Action<IAppBuilder>(WebConfig));
+
+            // Open Serial port
+            SerialDaemon.Initialize(config);
 
             Console.CancelKeyPress += (sender, e) =>
             {
@@ -36,9 +44,6 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
 
             Logger.Log("HippoArduinoSerialDaemon running");
 
-            // Schedule purge of records that have not been updated
-            await ScheduleNextUpdate();
-            
 
             // Run until Ctrl+C
             Console.CancelKeyPress += (sender, e) =>
@@ -49,6 +54,9 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             // Start watchdog
             Watchdog.Dog.ScheduleDog();
 
+            // Start WD keepalive
+            await ScheduleWatchdogCheck();
+
             // Wait for normal termination
             _endEvent.WaitOne();
 
@@ -57,49 +65,8 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
         }
 
 
-        private async Task ScheduleNextUpdate()
-        {
-            await Task.Run(async () => await UpdateTemperature());
-        }
-
-        private async Task UpdateTemperature()
-        {
-            // Wait one minute before updating the temperature
-            bool quit = _endEvent.WaitOne(5000);
-            if (quit) return;
-
-            // Trigger Watchdog so it doesn't kick us out.
-            // If this loop hangs, the watchdog will exit the process
-            // after five minutes, so that systemd (or similar)
-            // can restart it
-            Watchdog.Dog.Wake();
-
-            var daemon = ThermostatDaemon.Instance;
-
-            // Get current temperature
-            daemon.ReadRoomTemperatureCelsius();
-
-            // Determine if we need to switch the heating on or off
-            var switched = daemon.DetermineHeatingOn();
-
-            if (switched)
-            {
-                var state = daemon.InternalState;
-
-                Logger.Log("Heating switched {0}, room temperature {1}, target temperature {2}", state.HeatingOn ? "On" : "Off", state.RoomTemperature, state.TargetTemperature );
-            }
-
-            // TODO: Log to database?
-
-            if (!quit)
-            {
-                await ScheduleNextUpdate();
-            }
-        }
-
-
         // This code configures Web API using Owin
-        public void Configuration(IAppBuilder appBuilder)
+        public void WebConfig(IAppBuilder appBuilder)
         {
             // Configure Web API for self-host. 
             HttpConfiguration config = new HttpConfiguration();
@@ -119,6 +86,42 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             config.EnsureInitialized();
 
             appBuilder.UseWebApi(config);
+        }
+
+        public static Configuration ReadConfig()
+        {
+            using (StreamReader rea = new StreamReader("configuration.json"))
+            {
+                string json = rea.ReadToEnd();
+                return JsonConvert.DeserializeObject<Configuration>(json);
+            }
+        }
+
+        private async Task ScheduleWatchdogCheck()
+        {
+            await Task.Run(async () => await WatchdogCheck());
+        }
+
+        private async Task WatchdogCheck()
+        {
+            // Wait one minute before checking
+            bool quit = _endEvent.WaitOne(60000);
+            if (quit) return;
+
+            // Attempt to read from serial port
+            string retVal = await SerialDaemon.Instance.SendCommand("?T");
+            Logger.Log("Watchdog check on serial port: ?T command response {0}", retVal);
+
+            // Trigger Watchdog so it doesn't kick us out.
+            // If this loop hangs, the watchdog will exit the process
+            // after five minutes, so that systemd (or similar)
+            // can restart it
+            Watchdog.Dog.Wake();
+
+            if (!quit)
+            {
+                await ScheduleWatchdogCheck();
+            }
         }
 
     }

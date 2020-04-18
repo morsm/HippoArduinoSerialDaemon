@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web.Http;
 
 
@@ -21,36 +23,40 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
         }
 
 
-        [Route("webapi/roomtemp"), HttpGet]
-        public Temperature GetRoomTemperature()
+        [Route("webapi/temp"), HttpGet]
+        public async Task<Temperature> GetTemperature()
         {
             Temperature temp = new Temperature();
 
-            temp.CelsiusValue = ThermostatDaemon.Instance.ReadRoomTemperatureCelsius();
+            string tmpStr = await SerialDaemon.Instance.SendCommand("?T");
+            string humStr = await SerialDaemon.Instance.SendCommand("?H");
+
+            temp.TempCelsius = Double.Parse(tmpStr, CultureInfo.InvariantCulture);
+            temp.RelHumidity = Double.Parse(humStr, CultureInfo.InvariantCulture);
 
             return temp;
         }
 
-        [Route("webapi/targettemp"), HttpGet]
-        public Temperature GetTargetTemperature()
+        [Route("webapi/relaystatus"), HttpGet]
+        public async Task<int[]> GetRelayStatus()
         {
-            return GetThermostatState().TargetTemperature;
+            int[] statuses = new int[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                string tmpStr = await SerialDaemon.Instance.SendCommand("?" + (i+1));
+                statuses[i] = Int32.Parse(tmpStr, CultureInfo.InvariantCulture);
+            }
+
+            return statuses;
         }
 
-        [Route("webapi/state"), HttpGet]
-        public ThermostatState GetThermostatState()
+        [Route("webapi/setrelay/{relay}/{onoff}"), HttpGet]
+        public async Task SetRelay(int relay, int onoff)
         {
-            return ThermostatDaemon.Instance.InternalState;
-        }
+            string command = (onoff == 0 ? "O" : "C") + (relay + 1);
 
-        [Route("webapi/targettemp"), HttpPost]
-        public ThermostatState SetTargetTemp(Temperature temp)
-        {
-            // Set temp
-            ThermostatDaemon.Instance.SetTargetTemperature(temp);
-
-            // Return total thermostat state
-            return GetThermostatState();
+            await SerialDaemon.Instance.SendCommand(command);
         }
 
     }
