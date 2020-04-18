@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 
-namespace Termors.Serivces.HippotronicsThermoDaemon
+namespace Termors.Serivces.HippoArduinoSerialDaemon
 {
     public class WebPageGenerator
     {

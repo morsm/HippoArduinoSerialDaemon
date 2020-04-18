@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Termors.Serivces.HippotronicsThermoDaemon
+namespace Termors.Serivces.HippoArduinoSerialDaemon
 {
     /// <summary>
     /// Kills the process in case communication with one of the LED devices hangs up the main loop

@@ -10,7 +10,7 @@ using Microsoft.Owin.Hosting;
 using Owin;
 
 
-namespace Termors.Serivces.HippotronicsThermoDaemon
+namespace Termors.Serivces.HippoArduinoSerialDaemon
 {
     class Daemon
     {
@@ -23,18 +23,18 @@ namespace Termors.Serivces.HippotronicsThermoDaemon
 
         public async Task Run(string[] args)
         { 
-            Logger.Log("HippotronicsThermoDaemon started");
+            Logger.Log("HippoArduinoSerialDaemon started");
 
             // Set up REST services in OWIN web server
             var webapp = WebApp.Start("http://*:9002/", new Action<IAppBuilder>(Configuration));
 
             Console.CancelKeyPress += (sender, e) =>
             {
-                Logger.Log("HippotronicsThermoDaemon stopped");
+                Logger.Log("HippoArduinoSerialDaemon stopped");
                 webapp.Dispose();
             };
 
-            Logger.Log("HippotronicsThermoDaemon running");
+            Logger.Log("HippoArduinoSerialDaemon running");
 
             // Schedule purge of records that have not been updated
             await ScheduleNextUpdate();
@@ -52,7 +52,7 @@ namespace Termors.Serivces.HippotronicsThermoDaemon
             // Wait for normal termination
             _endEvent.WaitOne();
 
-            Logger.Log("HippotronicsThermoDaemon ending");
+            Logger.Log("HippoArduinoSerialDaemon ending");
             Environment.Exit(0);        // Normal exit
         }
 

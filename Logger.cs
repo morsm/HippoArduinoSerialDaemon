@@ -1,5 +1,5 @@
 ﻿using System;
-namespace Termors.Serivces.HippotronicsThermoDaemon
+namespace Termors.Serivces.HippoArduinoSerialDaemon
 {
     public sealed class Logger
     {

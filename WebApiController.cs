@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Web.Http;
 
 
-namespace Termors.Serivces.HippotronicsThermoDaemon
+namespace Termors.Serivces.HippoArduinoSerialDaemon
 {
     public class WebApiController : ApiController
     {
