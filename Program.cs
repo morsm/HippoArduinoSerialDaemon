@@ -34,6 +34,8 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             var webapp = WebApp.Start("http://*:9003/", new Action<IAppBuilder>(WebConfig));
 
             // Open Serial port
+            // If this throws, process will end and systemd can restart it.
+            // This would typically be for port busy, device not connected etc.
             SerialDaemon.Initialize(config);
 
             Console.CancelKeyPress += (sender, e) =>
@@ -108,19 +110,27 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             bool quit = _endEvent.WaitOne(60000);
             if (quit) return;
 
-            // Attempt to read from serial port
-            string retVal = await SerialDaemon.Instance.SendCommand("?T");
-            Logger.Log("Watchdog check on serial port: ?T command response {0}", retVal);
-
-            // Trigger Watchdog so it doesn't kick us out.
-            // If this loop hangs, the watchdog will exit the process
-            // after five minutes, so that systemd (or similar)
-            // can restart it
-            Watchdog.Dog.Wake();
-
-            if (!quit)
+            try
             {
+                // Attempt to read from serial port
+                string retVal = await SerialDaemon.Instance.SendCommand("?T");
+                Logger.Log("Watchdog check on serial port: ?T command response {0}", retVal);
+
+                // Trigger Watchdog so it doesn't kick us out.
+                // If this loop hangs, the watchdog will exit the process
+                // after five minutes, so that systemd (or similar)
+                // can restart it
+                Watchdog.Dog.Wake();
+
                 await ScheduleWatchdogCheck();
+
+            }
+            catch (Exception ex)
+            {
+                // On error, watchdog is not triggered and process will exit
+                Logger.LogError("Error during watchdog check: {0}, {1}", ex.GetType().Name, ex.Message);
+
+                _endEvent.Set();            // Quit even if watchdog doesn't do it for us
             }
         }
 
