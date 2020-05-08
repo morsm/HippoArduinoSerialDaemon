@@ -11,5 +11,8 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
 
         [JsonProperty]
         public int Baudrate { get; set; }
+
+        [JsonProperty]
+        public double TempCalibration { get; set; }
     }
 }

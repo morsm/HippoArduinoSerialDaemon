@@ -1,4 +1,5 @@
 ﻿{
-  "Device": "/dev/tty.wchusbserial143410",
-  "Baudrate": 9600
+  "Device": "/dev/ttyUSB0",
+  "Baudrate": 9600,
+  "TempCalibration":  -2.0
 }

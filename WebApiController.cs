@@ -31,7 +31,7 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             string tmpStr = await SerialDaemon.Instance.SendCommand("?T");
             string humStr = await SerialDaemon.Instance.SendCommand("?H");
 
-            temp.TempCelsius = Double.Parse(tmpStr, CultureInfo.InvariantCulture);
+            temp.TempCelsius = Double.Parse(tmpStr, CultureInfo.InvariantCulture) + Daemon.TempCalibration;
             temp.RelHumidity = Double.Parse(humStr, CultureInfo.InvariantCulture);
 
             return temp;

@@ -23,12 +23,18 @@ namespace Termors.Serivces.HippoArduinoSerialDaemon
             await new Daemon().Run(args);
         }
 
+        public static double TempCalibration
+        {
+            get; private set;
+        }
+
         public async Task Run(string[] args)
         { 
             Logger.Log("HippoArduinoSerialDaemon started");
 
             // Read JSON configuration
             var config = ReadConfig();
+            TempCalibration = config.TempCalibration;
            
             // Set up REST services in OWIN web server
             var webapp = WebApp.Start("http://*:9003/", new Action<IAppBuilder>(WebConfig));
